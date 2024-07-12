@@ -1,5 +1,5 @@
 import { useGetProductsQuery } from "../../redux/features/products/productsApi";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import NoProductsFound from "./NoProductsFound";
 
 const Products = () => {
@@ -46,9 +46,11 @@ const Products = () => {
                     ${product.price.toFixed(2)}
                   </p>
                   <div className="mt-4">
+                    <Link to={`/products/${product._id}`}>
                     <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
                       View Details
                     </button>
+                    </Link>
                   </div>
                 </div>
               </div>
