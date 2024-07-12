@@ -13,22 +13,13 @@ const corsOptions = {
 app.use(cors());
 app.use(express.json());
 
-
-const verifyJWT = (req, res, next) => {
-    const authorization = req.headers.authorization;
-    if (!authorization) {
-        return res.status(401).send({ error: true, message: 'unauthorized access' });
-    }
-    // bearer token
-    const token = authorization.split(' ')[1];
-
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(401).send({ error: true, message: 'unauthorized access' })
-        }
-        req.decoded = decoded;
-        next();
-    })
+function slugify(text) {
+    return text.toString().toLowerCase()
+        .replace(/\s+/g, '_')           // Replace spaces with underscores
+        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+        .replace(/\-\-+/g, '_')         // Replace multiple underscores with single underscore
+        .replace(/^-+/, '')             // Trim underscores from start of text
+        .replace(/-+$/, '');            // Trim underscores from end of text
 }
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -53,6 +44,10 @@ async function run() {
 
         app.post('/products', async (req, res) => {
             const newProduct = req.body;
+            if (newProduct.category) {
+                newProduct.slug = slugify(newProduct.category);
+            }
+
             try {
                 const result = await productsCollection.insertOne(newProduct);
                 res.status(201).send(result);
@@ -60,6 +55,7 @@ async function run() {
                 res.status(500).send({ error: 'Failed to add product' });
             }
         });
+        
 
         app.get('/products', async (req, res) => {
             try {
@@ -84,6 +80,9 @@ async function run() {
                 res.status(500).send({ error: 'Failed to fetch product' });
             }
         });
+
+
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });

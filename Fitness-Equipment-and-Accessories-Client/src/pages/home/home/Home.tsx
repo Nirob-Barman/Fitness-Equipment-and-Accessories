@@ -1,21 +1,11 @@
+import Categories from "../categories/Categories";
 
 const Home = () => {
-    return (
-        <div>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-            <h1>Home</h1>
-        </div>
-    );
+  return (
+    <div>
+      <Categories />
+    </div>
+  );
 };
 
 export default Home;
