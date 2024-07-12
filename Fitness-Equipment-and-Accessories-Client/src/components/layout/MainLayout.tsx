@@ -1,10 +1,12 @@
 import { Outlet } from "react-router-dom";
+import Navbar from "../../pages/Shared/Navbar";
+import Footer from "../../pages/Shared/Footer";
 const MainLayout = () => {
   return (
     <div>
-      <h1>Navbar</h1>
+      <Navbar />
       <Outlet />
-      <h1>Footer</h1>
+      <Footer />
     </div>
   );
 };
