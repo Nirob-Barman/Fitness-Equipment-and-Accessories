@@ -1,6 +1,7 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Autoplay } from "swiper/modules";
+import { Link } from "react-router-dom";
 
 const Banner = () => {
   return (
@@ -53,9 +54,11 @@ const Banner = () => {
               <p className="text-4xl text-orange-600 font-bold mx-10 py-2">
                 We provide fitness equipment and accessories like you desire.
               </p>
-              <button className="px-6 py-3 bg-gradient-to-r from-orange-800 to-orange-600 text-white font-bold rounded text-xl mt-10">
-                All Products
-              </button>
+              <Link to="/products">
+                <button className="px-6 py-3 bg-gradient-to-r from-orange-800 to-orange-600 text-white font-bold rounded text-xl mt-10">
+                  All Products
+                </button>
+              </Link>
             </div>
           </div>
         </SwiperSlide>

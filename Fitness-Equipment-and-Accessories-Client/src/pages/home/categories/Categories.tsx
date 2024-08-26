@@ -25,12 +25,13 @@ const Categories = () => {
   // }
 
   let uniqueProducts = {};
+
   if (products && products.length > 0) {
     products.forEach((product) => {
-      const { slug } = product;
+      const { slug, category } = product;
       if (!uniqueProducts[slug]) {
         uniqueProducts[slug] = {
-          name: slug,
+          name: category,
           slug,
           image: `path_to_${slug}_image`,
         };
@@ -39,9 +40,6 @@ const Categories = () => {
   }
 
   const categories = Object.values(uniqueProducts);
-
-  console.log(categories);
-    
 
   const navigate = useNavigate();
 

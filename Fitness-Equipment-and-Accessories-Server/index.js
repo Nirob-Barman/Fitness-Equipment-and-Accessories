@@ -34,7 +34,6 @@ const client = new MongoClient(uri, {
     }
 });
 
-
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -55,7 +54,24 @@ async function run() {
                 res.status(500).send({ error: 'Failed to add product' });
             }
         });
-        
+
+        app.get('/categories', async (req, res) => {
+            try {
+                const categories = await productsCollection.aggregate([
+                    {
+                        $group: {
+                            _id: "$slug",
+                            category: { $first: "$category" }
+                        }
+                    }
+                ]).toArray();
+
+                res.json(categories);
+            } catch (error) {
+                console.error("Error fetching categories:", error);
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        })
 
         app.get('/products', async (req, res) => {
             try {

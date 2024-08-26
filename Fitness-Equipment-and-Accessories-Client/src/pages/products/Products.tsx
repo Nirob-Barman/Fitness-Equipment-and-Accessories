@@ -1,13 +1,13 @@
 import { useGetProductsQuery } from "../../redux/features/products/productsApi";
 import { Link, useLocation } from "react-router-dom";
 import NoProductsFound from "./NoProductsFound";
-
 const Products = () => {
+
+
+
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const category = queryParams.get("category") || "";
-  console.log(category);
-
   const { data: products, error, isLoading } = useGetProductsQuery(undefined);
 
   if (isLoading) return <p>Loading...</p>;
