@@ -1,7 +1,11 @@
-import MainLayout from "./components/layout/MainLayout";
+import Home from "./pages/Home/Home";
 
-function App() {
-  return <MainLayout />;
-}
+const App = () => {
+  return (
+    <div>
+      <Home></Home>
+    </div>
+  );
+};
 
 export default App;
