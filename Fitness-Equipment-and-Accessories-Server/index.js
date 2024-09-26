@@ -1,119 +1,225 @@
-const express = require('express');
+import express from 'express';
+import { config } from 'dotenv';
+import cors from 'cors';
+import connectDB from './config/db.js';
+import Product from './models/products.js';
+import Order from './models/orders.js';
+
+// Load environment variables
+config();
+
+// Connect to MongoDB
+connectDB();
+
 const app = express();
-const cors = require('cors');
-require('dotenv').config()
-const port = process.env.PORT || 5000;
 
-// middleware
-const corsOptions = {
-    origin: "*",
-    credentials: true,
-    optionSuccessStatus: 200,
-};
-app.use(cors());
-app.use(express.json());
+// Middleware
+app.use(cors( ));
+app.use(express.json()); // Corrected middleware
 
-function slugify(text) {
-    return text.toString().toLowerCase()
-        .replace(/\s+/g, '_')           // Replace spaces with underscores
-        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-        .replace(/\-\-+/g, '_')         // Replace multiple underscores with single underscore
-        .replace(/^-+/, '')             // Trim underscores from start of text
-        .replace(/-+$/, '');            // Trim underscores from end of text
-}
-
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xceqs5c.mongodb.net/?retryWrites=true&w=majority`;
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
+// Define routes (example)
+app.get('/', (req, res) => {
+  res.send('API is running...');
 });
 
-async function run() {
-    try {
-        // Connect the client to the server	(optional starting in v4.7)
-        // await client.connect();
+// Products routes 
 
-        const productsCollection = client.db("Fitness-Equipment-and-Accessories").collection("products");
+// CREATE: Add a new product (POST)
+app.post('/api/products/create-product', async (req, res) => {
+  try {
+    const { name, category, price,quantity, description, image } = req.body;
+    const product = new Product({ name, category, price, quantity, description, image });
+    await product.save();
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
 
-        app.post('/products', async (req, res) => {
-            const newProduct = req.body;
-            if (newProduct.category) {
-                newProduct.slug = slugify(newProduct.category);
-            }
+// READ: Get all products (GET)
+app.get('/api/products', async (req, res) => {
+  try {
+    const { search, categories, minPrice, maxPrice, sortBy, sortOrder } = req.query;
 
-            try {
-                const result = await productsCollection.insertOne(newProduct);
-                res.status(201).send(result);
-            } catch (error) {
-                res.status(500).send({ error: 'Failed to add product' });
-            }
-        });
+  
+    let query = {};
 
-        app.get('/categories', async (req, res) => {
-            try {
-                const categories = await productsCollection.aggregate([
-                    {
-                        $group: {
-                            _id: "$slug",
-                            category: { $first: "$category" }
-                        }
-                    }
-                ]).toArray();
-
-                res.json(categories);
-            } catch (error) {
-                console.error("Error fetching categories:", error);
-                res.status(500).json({ error: 'Internal server error' });
-            }
-        })
-
-        app.get('/products', async (req, res) => {
-            try {
-                const products = await productsCollection.find().toArray();
-                res.status(200).send(products);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-                res.status(500).send({ error: 'Failed to fetch products' });
-            }
-        });
-
-        app.get('/products/:id', async (req, res) => {
-            const id = req.params.id;
-            try {
-                const product = await productsCollection.findOne({ _id: new ObjectId(id) });
-                if (!product) {
-                    return res.status(404).send({ error: 'Product not found' });
-                }
-                res.status(200).send(product);
-            } catch (error) {
-                console.error('Error fetching product:', error);
-                res.status(500).send({ error: 'Failed to fetch product' });
-            }
-        });
-
-
-
-
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
+    
+    if (search) {
+      query.name = { $regex: search, $options: 'i' }; 
     }
-}
-run().catch(console.dir);
 
-app.get('/', (req, res) => {
-    res.send('Fitness equipment and accessories server is running');
-})
+    // Filter by categories
+    if (categories) {
+      const categoryArray = categories.split(','); 
+      query.category = { $in: categoryArray };
+    }
 
-app.listen(port, () => {
-    console.log(`Fitness equipment and accessories server is listening on ${port}`);
-})
+    // Filter by price range
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    // Set up sorting
+    let sortOptions = {};
+    if (sortBy) {
+      const sortField = sortBy;
+      const order = sortOrder === 'desc' ? -1 : 1;
+      sortOptions[sortField] = order;
+    }
+
+    // Fetch filtered and sorted products
+    const products = await Product.find(query).sort(sortOptions);
+
+    res.status(200).json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+
+// READ: Get a single product by ID (GET)
+app.get('/api/products/:id', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(200).json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// UPDATE: Update a product by ID (PUT)
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const { name, category, price, description, image, quantity } = req.body;
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { name, category, price, description , image, quantity },
+      { new: true, runValidators: true }
+    );
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(200).json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// DELETE: Delete a product by ID (DELETE)
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.status(200).json({ message: 'Product deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// READ: Get products by category (GET)
+app.get('/api/products/category/:category', async (req, res) => {
+  try {
+    const products = await Product.find({ category: { $in: [req.params.category] } });
+    res.status(200).json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+
+// Orders routes
+// CREATE: Add an order (POST)
+app.post('/api/orders/create-orders', async (req, res) => {
+  try {
+    const { name, userImage, email, address, phoneNumber, products, total } = req.body;
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ message: 'Products are required in the order' });
+    }
+
+    const orderProducts = [];
+
+    for (const item of products) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return res.status(404).json({ message: `Product with ID ${item.productId} not found` });
+      }
+
+      if (product.quantity < item.quantity) {
+        return res.status(400).json({ message: `Not enough quantity for product ${product.name}` });
+      }
+
+      
+      product.quantity -= item.quantity;
+      await product.save();
+
+  
+      orderProducts.push({
+        productId: product._id, 
+        name: product.name,
+        image: product.image,
+        description: product.description,
+        quantity: item.quantity,
+        price: product.price,
+      });
+    }
+
+    const order = new Order({ name, email, userImage, address, phoneNumber, products: orderProducts, total });
+    await order.save();
+
+    res.status(201).json(order);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+
+
+
+// READ: Get all orders (GET)
+app.get('/api/orders', async (req, res) => {
+  try {
+    const orders = await Order.find();
+    res.status(200).json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// READ: Get an order by ID (GET)
+app.get('/api/orders/:id', async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    res.status(200).json(order);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// delete order 
+app.delete('/api/orders/:id', async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    res.status(200).json({ message: 'Order deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
